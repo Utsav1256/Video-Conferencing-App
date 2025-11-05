@@ -49,11 +49,7 @@ function LandingPage() {
           </div>
         </div>
         <div className="hero-image">
-          <div className="video-preview">
-            <div className="video-placeholder">
-              <MessageSquare size={60} strokeWidth={1.5} opacity={0.8} />
-            </div>
-          </div>
+          <img src="/videocall.png" alt="Video call preview" style={{ width: '100%', height: 'auto', borderRadius: '12px' }} />
         </div>
       </section>
 

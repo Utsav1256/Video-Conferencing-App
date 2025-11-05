@@ -189,7 +189,9 @@
 
 .cta-section {
   padding: 5rem 2rem;
-  background: linear-gradient(135deg, #1a73e8 0%, #34a853 100%);
+  background: linear-gradient(135deg, rgba(26, 115, 232, 0.85) 0%, rgba(52, 168, 83, 0.85) 100%), url('/bannerimage.png');
+  background-size: cover;
+  background-position: center;
 }
 
 .cta-content {

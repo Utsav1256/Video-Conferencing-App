@@ -102,3 +102,35 @@
     font-size: 0.9rem;
   }
 }
+
+/* Compact buttons for header auth actions */
+.btn-compact {
+  padding: 0.4rem 0.6rem;
+  min-width: auto;
+}
+
+/* Avatar styles */
+.auth-buttons .avatar {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.75rem;
+  margin-left: 0.5rem;
+}
+
+.auth-buttons .avatar-initials {
+  background: #1a73e8;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+/* Force compact size regardless of global overrides */
+.auth-buttons .avatar {
+  width: 30px !important;
+  height: 30px !important;
+}
