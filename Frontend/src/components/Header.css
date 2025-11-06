@@ -15,6 +15,15 @@
   align-items: center;
 }
 
+.mobile-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  padding: 0.4rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
 .logo {
   display: flex;
   align-items: center;
@@ -92,6 +101,7 @@
 
   .nav {
     gap: 1rem;
+    display: none;
   }
 
   .logo-text {
@@ -100,6 +110,61 @@
 
   .nav-link {
     font-size: 0.9rem;
+  }
+
+  .auth-buttons {
+    display: none;
+  }
+
+  .mobile-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-menu {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 9999;
+  }
+
+  .mobile-menu-inner {
+    position: absolute;
+    top: 64px;
+    right: 12px;
+    width: min(88vw, 320px);
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.18);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mobile-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mobile-auth {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .mobile-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px;
+  }
+
+  .mobile-user-name {
+    font-weight: 600;
   }
 }
 

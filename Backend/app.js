@@ -8,6 +8,8 @@ const meetingRoutes = require('./routes/meetingRoutes');
 const http = require('http');
 const { Server } = require('socket.io');
 const Meeting = require('./Models/Meeting');
+const jwt = require('jsonwebtoken');
+const User = require('./Models/User');
 
 const app = express();
 connectDB();
@@ -44,6 +46,40 @@ app.use((err, req, res, next) => {
     next(err);
 });
 
+// 404 handler (for unmatched routes)
+app.use((req, res, next) => {
+    res.status(404).json({ message: 'Route not found' });
+  });
+  
+  // Global error handler
+  app.use((err, req, res, next) => {
+    // Handle known CORS error explicitly
+    if (err && err.message === 'Not allowed by CORS') {
+      return res.status(403).json({ message: 'CORS Error: Origin not allowed' });
+    }
+  
+    // Mongoose validation error
+    if (err && err.name === 'ValidationError') {
+      return res.status(400).json({ message: err.message });
+    }
+  
+    // JWT errors
+    if (err && (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError')) {
+      return res.status(401).json({ message: 'Invalid or expired token' });
+    }
+  
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || 'Internal Server Error';
+  
+    // Only include stack in non-production
+    const payload = { message };
+    if (process.env.NODE_ENV !== 'production') {
+      payload.stack = err.stack;
+    }
+  
+    res.status(status).json(payload);
+  });
+
 const server = http.createServer(app);
 
 const io = new Server(server, {
@@ -54,17 +90,39 @@ const io = new Server(server, {
     }
 });
 
+// Socket auth: verify JWT from handshake
+io.use(async (socket, next) => {
+    try {
+        const headerAuth = socket.handshake.headers && socket.handshake.headers.authorization;
+        const fromHeader = headerAuth && headerAuth.startsWith('Bearer ') ? headerAuth.split(' ')[1] : null;
+        const fromAuth = socket.handshake.auth && socket.handshake.auth.token ? socket.handshake.auth.token : null;
+        const token = fromAuth || fromHeader;
+        if (!token) {
+            return next(new Error('Unauthorized'));
+        }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select('_id name email photoURL');
+        if (!user) {
+            return next(new Error('Unauthorized'));
+        }
+        socket.authUser = user;
+        next();
+    } catch (err) {
+        return next(new Error('Unauthorized'));
+    }
+});
+
 io.on('connection', (socket) => {
     console.log('Socket connected:', socket.id);
 
-    socket.on('join-meeting', ({ meetingId, userId, userName }) => {
+    socket.on('join-meeting', ({ meetingId }) => {
         socket.join(meetingId);
         socket.meetingId = meetingId;
-        socket.userId = userId;
+        socket.userId = socket.authUser?._id?.toString();
 
         socket.to(meetingId).emit('user-joined', {
-            userId,
-            userName,
+            userId: socket.userId,
+            userName: socket.authUser?.name || 'User',
             socketId: socket.id
         });
 
@@ -75,15 +133,15 @@ io.on('connection', (socket) => {
                 if (!meeting) {
                     meeting = await Meeting.create({
                         meetingId,
-                        hostId: userId,
-                        participants: [{ userId, socketId: socket.id, joinedAt: new Date() }],
+                        hostId: socket.userId,
+                        participants: [{ userId: socket.userId, socketId: socket.id, joinedAt: new Date() }],
                         startedAt: new Date(),
                         isActive: true
                     });
                 } else {
                     const exists = meeting.participants.some(p => p.socketId === socket.id);
                     if (!exists) {
-                        meeting.participants.push({ userId, socketId: socket.id, joinedAt: new Date() });
+                        meeting.participants.push({ userId: socket.userId, socketId: socket.id, joinedAt: new Date() });
                     }
                     meeting.isActive = true;
                     if (!meeting.startedAt) meeting.startedAt = new Date();

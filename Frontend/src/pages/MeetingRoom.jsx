@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 function MeetingRoom() {
   const { meetingId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const socketRef = useRef(null);
   const localStreamRef = useRef(null);
   const localVideoRef = useRef(null);
@@ -96,14 +96,12 @@ function MeetingRoom() {
           localVideoRef.current.srcObject = stream;
         }
 
-        const socket = createSocket();
+        const socket = createSocket(token);
         socketRef.current = socket;
 
         socket.on('connect', () => {
           socket.emit('join-meeting', {
-            meetingId,
-            userId: user?._id || 'anon',
-            userName: user?.name || 'Guest',
+            meetingId
           });
         });
 
@@ -111,6 +109,11 @@ function MeetingRoom() {
         socket.io.on('reconnect', () => addToast('Reconnected'));
         socket.io.on('error', () => addToast('Socket error'));
         socket.on('disconnect', () => addToast('Disconnected'));
+        socket.on('connect_error', (err) => {
+          const msg = err?.message === 'Unauthorized' ? 'Authentication required. Redirecting to login…' : 'Connection error. Please login again.';
+          addToast(msg);
+          setTimeout(() => navigate('/login'), 800);
+        });
 
         socket.on('user-joined', async ({ socketId: remoteId, userName }) => {
           // store display name
