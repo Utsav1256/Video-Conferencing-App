@@ -312,7 +312,7 @@ function MeetingRoom() {
   const addToast = (msg) => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, msg }]);
-    setTimeout(() => setToasts((prev) => prev.filter(t => t.id !== id)), 3000);
+    setTimeout(() => setToasts((prev) => prev.filter(t => t.id !== id)), 5000);
   };
 
   const handleCopyLink = async () => {
