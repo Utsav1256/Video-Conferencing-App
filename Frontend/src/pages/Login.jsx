@@ -49,7 +49,7 @@ export default function Login() {
           </div>
           {error && <div className="auth-error">{error}</div>}
           <div className="auth-helpers">
-            <label className="auth-remember">
+            <label className="auth-remember"  style={{ color: 'gray' }}>
               <input type="checkbox" /> Remember me
             </label>
             <Link to="/forgot-password">Forgot password?</Link>

@@ -318,6 +318,18 @@
   font-weight: 500;
 }
 
+.participant-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.participant-subtext {
+  font-size: 0.75rem;
+  color: #9aa0a6;
+}
+
 .participant-status {
   display: flex;
   gap: 0.5rem;

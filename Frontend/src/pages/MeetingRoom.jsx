@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Copy, MessageSquare, Users, Mic, MicOff, Video, VideoOff, Monitor, PhoneOff, Send, X } from 'lucide-react';
 import './MeetingRoom.css';
@@ -27,6 +27,29 @@ function MeetingRoom() {
   const [showParticipants, setShowParticipants] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
+  const participants = useMemo(() => {
+    const list = [
+      {
+        id: 'self',
+        name: user?.name || 'You',
+        isMuted,
+        isVideoOff,
+        isSelf: true,
+      }
+    ];
+    remotePeers.forEach(({ socketId }) => {
+      const entry = peersRef.current.get(socketId) || {};
+      list.push({
+        id: socketId,
+        name: entry.name || 'Peer',
+        isMuted: entry.isMuted ?? false,
+        isVideoOff: entry.isVideoOff ?? false,
+        isSelf: false,
+      });
+    });
+    return list;
+  }, [user, isMuted, isVideoOff, remotePeers]);
+
   const getInitials = (name) => {
     const src = (name || '').trim();
     if (!src) return '?';
@@ -515,12 +538,18 @@ function MeetingRoom() {
               {participants.map((participant) => (
                 <div key={participant.id} className="participant-item">
                   <div className="participant-avatar">
-                    {participant.name.charAt(0)}
+                    {getInitials(participant.name)}
                   </div>
-                  <span className="participant-item-name">{participant.name}</span>
+                  <div className="participant-meta">
+                    <span className="participant-item-name">
+                      {participant.name}
+                      {participant.isSelf ? ' (You)' : ''}
+                    </span>
+                    <span className="participant-subtext">{participant.isMuted ? 'Muted' : 'Speaking'}</span>
+                  </div>
                   <div className="participant-status">
-                    {participant.isMuted && <MicOff size={16} />}
-                    {participant.isVideoOff && <VideoOff size={16} />}
+                    {participant.isMuted ? <MicOff size={16} /> : <Mic size={16} />}
+                    {participant.isVideoOff ? <VideoOff size={16} /> : <Video size={16} />}
                   </div>
                 </div>
               ))}
