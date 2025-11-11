@@ -22,6 +22,8 @@ function MeetingRoom() {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [audioOutputName, setAudioOutputName] = useState('Default Output');
+  const [audioOutputDeviceId, setAudioOutputDeviceId] = useState(null);
   const [showChat, setShowChat] = useState(false);
   const showChatRef = useRef(false);
   const [showParticipants, setShowParticipants] = useState(false);
@@ -72,6 +74,37 @@ function MeetingRoom() {
 
   const getPeerName = (socketId) => (peersRef.current.get(socketId) && peersRef.current.get(socketId).name) || 'Peer';
 
+  // update audio output device label (listening device)
+  const updateAudioDeviceName = async () => {
+    try {
+      if (!navigator.mediaDevices) return;
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      // prefer an explicit audiooutput if available, otherwise default
+      const out = devices.find(d => d.kind === 'audiooutput');
+      setAudioOutputDeviceId(out?.deviceId || null);
+      setAudioOutputName(out?.label || 'Default Output');
+
+      // apply sinkId to any video elements that support setSinkId (route audio)
+      if (out?.deviceId) {
+        peersRef.current.forEach((entry) => {
+          try {
+            const el = entry.videoEl;
+            if (el && typeof el.setSinkId === 'function') {
+              el.setSinkId(out.deviceId).catch(() => {});
+            }
+          } catch (e) {}
+        });
+        // local video is muted so no sink needed, but try to set for completeness
+        try {
+          if (localVideoRef.current && typeof localVideoRef.current.setSinkId === 'function') {
+            localVideoRef.current.setSinkId(out.deviceId).catch(() => {});
+          }
+        } catch (e) {}
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
   const createPeer = (remoteSocketId) => {
     const pc = new RTCPeerConnection(rtcConfig);
     addLocalTracks(pc);
@@ -118,6 +151,10 @@ function MeetingRoom() {
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
         }
+
+  // update audio output device label now and when devices change
+  updateAudioDeviceName();
+  try { navigator.mediaDevices.addEventListener('devicechange', updateAudioDeviceName); } catch (e) { /* some browsers */ }
 
         const socket = createSocket(token);
         socketRef.current = socket;
@@ -236,6 +273,7 @@ function MeetingRoom() {
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(t => t.stop());
       }
+      try { navigator.mediaDevices.removeEventListener('devicechange', updateAudioDeviceName); } catch (e) { /* ignore */ }
       document.title = 'VideoMeet';
     };
   }, [meetingId, user]);
@@ -381,6 +419,14 @@ function MeetingRoom() {
           <h2 className="meeting-title">Meeting: {meetingId}</h2>
           <span className="meeting-time">12:34 PM</span>
         </div>
+        <button
+          className="audio-device-btn"
+          onClick={() => addToast(`Output: ${audioOutputName}`)}
+          title={`Audio output: ${audioOutputName}`}
+        >
+          <Monitor size={18} />
+          <span className="audio-device-name">{audioOutputName || 'Default Output'}</span>
+        </button>
         <button className="copy-link-btn" onClick={handleCopyLink} title="Copy meeting link">
           <Copy size={18} />
           Copy Link
@@ -420,7 +466,14 @@ function MeetingRoom() {
                     <video
                       ref={(el) => {
                         const entry = peersRef.current.get(focusedSocketId);
-                        if (entry) entry.videoEl = el;
+                        if (entry) {
+                          entry.videoEl = el;
+                          try {
+                            if (el && audioOutputDeviceId && typeof el.setSinkId === 'function') {
+                              el.setSinkId(audioOutputDeviceId).catch(() => {});
+                            }
+                          } catch (e) {}
+                        }
                       }}
                       autoPlay playsInline className="video-element"
                     />
@@ -475,7 +528,15 @@ function MeetingRoom() {
                   <video
                     ref={(el) => {
                       const entry = peersRef.current.get(socketId);
-                      if (entry) entry.videoEl = el;
+                      if (entry) {
+                        entry.videoEl = el;
+                        // if we already know the preferred output device, apply it
+                        try {
+                          if (el && audioOutputDeviceId && typeof el.setSinkId === 'function') {
+                            el.setSinkId(audioOutputDeviceId).catch(() => {});
+                          }
+                        } catch (e) {}
+                      }
                     }}
                     autoPlay playsInline className="video-element"
                   />
