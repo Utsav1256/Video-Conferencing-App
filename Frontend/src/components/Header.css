@@ -125,7 +125,7 @@
   .mobile-menu {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.45);
+    background: inherit;
     z-index: 9999;
   }
 
@@ -134,13 +134,9 @@
     top: 64px;
     right: 12px;
     width: min(88vw, 320px);
-    /* Use header's background so mobile menu adapts to site-wide / universal styling
-       instead of forcing a dark panel. This lets light/dark modes or transparent
-       headers flow through naturally. */
     background: inherit;
     color: inherit;
     border-radius: 12px;
-    /* a softer shadow so it works on both light and dark backgrounds */
     box-shadow: 0 12px 28px rgba(0,0,0,0.08);
     padding: 12px;
     display: flex;
